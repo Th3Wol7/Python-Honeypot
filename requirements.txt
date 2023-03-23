@@ -1,0 +1,7 @@
+docopt~=0.6.2
+dpkt~=1.9.8
+pyshark~=0.5.3
+pynotification~=0.1.2
+scapy==2.5.0
+win10toast~=0.9
+setuptools~=67.6.0
