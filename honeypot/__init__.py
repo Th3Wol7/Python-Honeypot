@@ -2,6 +2,7 @@ import gi
 import threading
 import logging
 from scapy.layers.inet import TCP, IP
+from scapy.packet import Raw
 
 gi.require_version('Notify', '0.7')
 from gi.repository import Notify
@@ -11,6 +12,7 @@ from scapy.all import sniff
 
 class HoneyPot(object):
     def __init__(self, bind_ip, ports, log_filepath):
+        self.failed_attempts = None
         if len(ports) < 1:  # Checking ports before configuring logger
             raise Exception("No ports were provided.")
 
@@ -87,7 +89,7 @@ class HoneyPot(object):
         logger.addHandler(console_handler)
         return logger
 
-    def start_packet_capture(self): # Continuous process that never ends until honeypot terminates
+    def start_packet_capture(self):  # Continuous process that never ends until honeypot terminates
         # Define the filter expression
         filter_expr = "tcp and (port 21 or port 22 or port 80 or port 443)"  # or port 25 or port 53 or port 443 or
         # port 135 or port 8080)"
@@ -100,6 +102,7 @@ class HoneyPot(object):
         # Extracting relevant packet data
         while True:
             pkt = sniff(count=1)[0]
+            pkt_data = None
             if IP in pkt and TCP in pkt:
                 pkt_data = {
                     'source': pkt[IP].src,
@@ -109,9 +112,43 @@ class HoneyPot(object):
                     'dst_port': pkt[TCP].dport,
                     'payload': str(pkt[TCP].payload)
                 }
+            # Conducting Intrusion detection implementations:
+            if pkt.haslayer(Raw) and pkt[TCP].dport in [80, 8080]:
+                # Extracting user agent from HTTP packet
+                http_payload = pkt.getlayer(Raw).load
+                if b"User-Agent" in http_payload:
+                    user_agent = http_payload.split(b"User-Agent: ")[1].split(b"\r\n")[0].decode()
+                    self.logger.info(f"User agent: {user_agent}")
+                    # Check if packet is a SYN packet
+                    if pkt[TCP].flags == 'S':
+                        self.logger.info(
+                            "SYN packet detected from %s:%s to %s:%s" % (
+                                pkt_data['source'], pkt_data['src_port'], pkt_data['destination'],
+                                pkt_data['dst_port']))
+
+                    # Check if packet is a RST packet
+                    if pkt[TCP].flags == 'R':
+                        self.logger.warning(
+                            "RST packet detected from %s:%s to %s:%s" % (
+                                pkt_data['source'], pkt_data['src_port'], pkt_data['destination'],
+                                pkt_data['dst_port']))
+
+                    # Check if packet is a FIN packet
+                    if pkt[TCP].flags == 'F':
+                        self.logger.warning("FIN packet detected from %s:%s to %s:%s" % (
+                            pkt_data['source'], pkt_data['src_port'], pkt_data['destination'],
+                            pkt_data['dst_port']))
+
+            # Detecting possible port scanning
+            if pkt[TCP].flags == 2:
+                self.logger.warning("Possible port scanning on port %s from %s" % (pkt[TCP].dport, pkt[IP].src))
+
+            # Detecting possible DoS attack
+            if len(pkt[TCP].payload) > 10000:
+                self.logger.warning("Possible DoS attack on port %s from %s" % (pkt[TCP].dport, pkt[IP].src))
 
             # Logging the extracted data
-            self.logger.info("Packet captured on port has %s" % (pkt_data))
+            self.logger.info("Packet captured on port has %s" % pkt_data)
 
             # Conducting further analysis on packet data
             # Check for potential SQL injection
@@ -143,6 +180,27 @@ class HoneyPot(object):
             if len(pkt_data['payload']) > 1000:
                 self.logger.warning("Possible buffer overflow attack on port from %s:%d - %s" % (
                     pkt_data['source'], pkt_data['src_port'], pkt_data['payload']))
+
+            # Detecting possible DoS attack
+            if len(pkt[TCP].payload) > 10000:
+                self.logger.warning("Possible DoS attack on port %s from %s" % (pkt[TCP].dport, pkt[IP].src))
+
+            # Detecting possible malware distribution
+            if "GET" in pkt[TCP].payload.decode() and "malware" in pkt[TCP].payload.decode():
+                self.logger.warning(
+                    "Possible malware distribution on port %s from %s" % (pkt[TCP].dport, pkt[IP].src))
+
+            """
+            # Implementing rule to block IP addresses for repeated failed login attempts
+            if "POST" in pkt[TCP].payload.decode() and "login" in pkt[TCP].payload.decode() and "password" in pkt[TCP].payload.decode():
+                failed_attempts = self.get_failed_login_attempts(pkt[IP].src)
+                if failed_attempts >= 3:
+                    self.logger.warning(
+                        "Blocking IP address %s due to repeated failed login attempts" % pkt[IP].src)
+                    self.block_ip_address(pkt[IP].src)
+                else:
+                    self.increment_failed_login_attempts(pkt[IP].src)
+            """
 
     # run method for starting a main thread on the server
     def run(self):
