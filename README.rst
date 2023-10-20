@@ -15,7 +15,8 @@ You can install these packages using the following command:
 
 `pip install gi scapy Notify`
 
-## Installation
+Installation
+----
 Install the required packages by running the following command:<br>
 ```pip install scapy pygobject``` <br>
 Clone the repository to your local machine using the following command: <br>
@@ -32,7 +33,8 @@ markdown
 
 `python __init__.py`
 
-## Intrusion Detection
+ Intrusion Detection
+----
 The honeypot conducts basic intrusion detection by searching for keywords commonly associated with attacks. If any of the following keywords are detected in the data received from a client, an alert is logged to the console:
 - password
 - login
