@@ -15,7 +15,7 @@ You can install these packages using the following command:
 
 `pip install gi scapy Notify`
 
- Installation
+Installation
 ----
 Install the required packages by running the following command:<br>
 ```pip install scapy pygobject``` <br>
