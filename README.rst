@@ -26,7 +26,7 @@ Navigate to the cloned repository directory and run the following command: <br>
 The honeypot should now be running and listening for connections. <br>
 
 Usage
------
+----
 To use HoneyPot, simply run the __init__.py file using the following command:
 
 markdown
@@ -34,7 +34,7 @@ markdown
 `python __init__.py`
 
  Intrusion Detection
------
+----
 The honeypot conducts basic intrusion detection by searching for keywords commonly associated with attacks. If any of the following keywords are detected in the data received from a client, an alert is logged to the console:
 - password
 - login
@@ -59,12 +59,12 @@ log_filepath
 Set the filepath of the log file. The log file will store information about any connections made to the honeypot.
 
 Limitations
------
+----
 The application currently only supports monitoring traffic on ports 21, 22, 80 and 443. To monitor traffic on other ports, modify the filter_expr variable in the capture_packets method of the HoneyPot class.
 The application does not support persistent storage of logs. Logs are overwritten every time the application is run.
 The application can only be executed on a machine using a Linux operating system
 
 License
------
+----
 This project is licensed under the MIT License. See the LICENSE file for details.
 
