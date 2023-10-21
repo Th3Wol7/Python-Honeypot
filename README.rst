@@ -33,7 +33,7 @@ markdown
 
 `python __init__.py`
 
- Intrusion Detection
+Intrusion Detection
 ----
 The honeypot conducts basic intrusion detection by searching for keywords commonly associated with attacks. If any of the following keywords are detected in the data received from a client, an alert is logged to the console:
 - password
